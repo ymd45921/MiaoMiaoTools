@@ -2,8 +2,8 @@ import os
 from functools import singledispatch
 from typing import Union, List, Optional
 import requests
-from spotlight_info import SpotlightInfo, fetch_cn_spotlight_info
-
+import re
+from .spotlight_info import SpotlightInfo, fetch_cn_spotlight_info
 
 
 @singledispatch
@@ -30,7 +30,9 @@ def _(url: str, path: str, force: bool) -> Optional[str]:
         response = requests.get(image_url)
         if response.status_code == 200:
             extname = response.headers['Content-Type'].split("/")[-1]
-            filename = os.path.isdir(path) and os.path.join(path, title + "." + extname) or path
+            # 替换 title 中包含的不能用作文件名的字符
+            safe_title = re.sub(r'[/\\:*?"<>|]', " ", title)
+            filename = os.path.isdir(path) and os.path.join(path, safe_title + "." + extname) or path
 
             if os.path.exists(filename) and not force:
                 print(f"File {filename} already exists. Use -f to force download.")
@@ -64,3 +66,5 @@ def list_info(infos: List[SpotlightInfo], current: int) -> None:
         else:
             print(f"{i + 1}. {info.title}")
         print(f"   {info.description}")
+        print(f"   {info.copyright}")
+        print(f"   {info.url()}")

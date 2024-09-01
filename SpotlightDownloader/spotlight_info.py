@@ -3,6 +3,8 @@ import requests
 from bs4 import BeautifulSoup
 from typing import Tuple, Optional
 from dataclasses import dataclass
+from urllib.parse import urlsplit, urlunsplit, quote
+
 
 def fetch_cn_spotlight_info(page_url: str) -> Tuple[Optional[str], Optional[str]]:
     """
@@ -64,6 +66,21 @@ class SpotlightInfo:
     _local_path_landscape: str
     _local_path_portrait: str
 
+    def url(self) -> str:
+        """
+        Returns the encoded URL of the wallpaper detail webpage.
+
+        Returns:
+            str: The URL of the wallpaper detail webpage.
+        """
+        parts = urlsplit(self.edge_uri.replace("microsoft-edge:", ""))
+        return str(urlunsplit((
+            parts.scheme, parts.netloc,
+            quote(parts.path, safe="/"),
+            quote(parts.query, safe="=&"),
+            quote(parts.fragment)
+        )))
+
 
 def get_desktop_spotlight_info() -> Tuple[Optional[list[SpotlightInfo]], Optional[int]]:
     """
@@ -93,7 +110,7 @@ def get_desktop_spotlight_info() -> Tuple[Optional[list[SpotlightInfo]], Optiona
         creatives_data = [
             SpotlightInfo(
                 title=creative.get("ad", {}).get("title"),
-                description=creative.get("ad", {}).get("Description"),
+                description=creative.get("ad", {}).get("description"),
                 copyright=creative.get("ad", {}).get("copyright"),
                 edge_uri=creative.get("ad", {}).get("ctaUri"),
                 _tracking_uri=creative.get("tracking", {}).get("baseUri"),
